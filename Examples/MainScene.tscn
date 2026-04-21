@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://geuxkpo7rg16"]
+
+[ext_resource type="Script" uid="uid://do3gvksfhs74x" path="res://Examples/MainScene.cs" id="1_7p26t"]
+[ext_resource type="Script" uid="uid://bpr11m73gy0lx" path="res://addons/kaleido_nodes/MarkerControl/MarkerControl.cs" id="2_bxtkp"]
+[ext_resource type="Script" uid="uid://bgq1bjr6qoo3y" path="res://addons/kaleido_nodes/GlyphText/GlyphText.cs" id="3_0aevy"]
+
+[node name="MainScene" type="Control" unique_id=574656480]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_7p26t")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1626615354]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=214173758]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.48800004
+anchor_top = 0.47800002
+anchor_right = 0.48800004
+anchor_bottom = 0.47800002
+offset_left = -20.176025
+offset_top = -18.744019
+offset_right = 19.823975
+offset_bottom = 21.255981
+
+[node name="MarkerControl" type="Control" parent="." unique_id=613124860]
+layout_mode = 1
+anchor_left = 0.66700006
+anchor_top = 0.49400002
+anchor_right = 0.66700006
+anchor_bottom = 0.49400002
+offset_left = -16.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 16.0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
+script = ExtResource("2_bxtkp")
+metadata/_custom_type_script = "uid://bpr11m73gy0lx"
+
+[node name="GlyphText" type="Node2D" parent="." unique_id=329211336]
+unique_name_in_owner = true
+editor_description = "A node that renders text as individual glyphs with separate collision shapes for each glyph, allowing for precise mouse interactions."
+position = Vector2(192, 184)
+script = ExtResource("3_0aevy")
+metadata/_custom_type_script = "uid://bgq1bjr6qoo3y"

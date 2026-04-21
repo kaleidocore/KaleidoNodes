@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cl73mnlbdm58j"]
+
+[ext_resource type="Script" uid="uid://bgq1bjr6qoo3y" path="res://addons/kaleido_nodes/GlyphText/GlyphText.cs" id="1_dx010"]
+
+[node name="GlyphText" type="Node2D" unique_id=2141819859]
+script = ExtResource("1_dx010")

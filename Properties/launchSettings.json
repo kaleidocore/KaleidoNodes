@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Run Godot Game": {
+      "commandName": "Executable",
+      "executablePath": "%GODOT_EXE%",
+      "commandLineArgs": "--path . --verbose",
+      "workingDirectory": "."
+    }
+  }
+}

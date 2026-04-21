@@ -43,9 +43,10 @@ mouse_filter = 2
 script = ExtResource("2_bxtkp")
 metadata/_custom_type_script = "uid://bpr11m73gy0lx"
 
-[node name="GlyphText" type="Node2D" parent="." unique_id=329211336]
+[node name="GlyphText" type="Node2D" parent="." unique_id=681315421]
 unique_name_in_owner = true
 editor_description = "A node that renders text as individual glyphs with separate collision shapes for each glyph, allowing for precise mouse interactions."
-position = Vector2(192, 184)
+position = Vector2(188.86783, 316.02557)
 script = ExtResource("3_0aevy")
+Text = "Hello"
 metadata/_custom_type_script = "uid://bgq1bjr6qoo3y"

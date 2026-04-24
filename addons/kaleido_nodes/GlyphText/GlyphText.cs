@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Godot;
-namespace Spellbound;
+
+namespace KaleidoNodes;
 
 public enum HorizontalOrigin
 {
@@ -33,7 +33,6 @@ public partial class GlyphText : Node2D
 	HorizontalOrigin _originX = HorizontalOrigin.Center;
 	VerticalOrigin _originY = VerticalOrigin.Baseline;
 	Vector2 _offset;
-	readonly HashSet<int> _hoveredGlyphs = [];
 
 	ColorRect? _boundsGizmo;
 	ColorRect BoundsGizmo => _boundsGizmo ?? throw new InvalidOperationException("BoundsGizmo node not found");
@@ -41,9 +40,10 @@ public partial class GlyphText : Node2D
 	Area2D? _hitbox;
 	Area2D Hitbox => _hitbox ?? throw new InvalidOperationException("Hitbox node not found");
 
-	bool CanRebuild => IsInsideTree();
+	bool CanRebuild => IsInsideTree() && _hitbox != null;
 
 	public Rect2 Bounds => _bounds;
+	public bool IsTouching { get; private set; }
 
 	[Export]
 	public Font? Font
@@ -134,10 +134,12 @@ public partial class GlyphText : Node2D
 		}
 	}
 
-	[Signal] public delegate void MousePressedEventHandler(int glyphIndex);
-	[Signal] public delegate void MouseReleasedEventHandler(int glyphIndex);
-	[Signal] public delegate void MouseEnteredEventHandler(int glyphIndex);
-	[Signal] public delegate void MouseExitedEventHandler(int glyphIndex);
+	[Signal] public delegate void TouchEnteredEventHandler();
+	[Signal] public delegate void TouchExitedEventHandler();
+	[Signal] public delegate void MouseEnteredEventHandler();
+	[Signal] public delegate void MouseExitedEventHandler();
+	[Signal] public delegate void MouseGlyphEnteredEventHandler(int glyphIndex);
+	[Signal] public delegate void MouseGlyphExitedEventHandler(int glyphIndex);
 	[Signal] public delegate void AreaEnteredEventHandler(Area2D area);
 	[Signal] public delegate void AreaExitedEventHandler(Area2D area);
 
@@ -170,31 +172,53 @@ public partial class GlyphText : Node2D
 	{
 		if (!Engine.IsEditorHint())
 		{
-			Hitbox.InputEvent += (_, @event, shapeIdx) =>
+			Hitbox.MouseEntered += () =>
 			{
-				if (@event is InputEventMouseButton mb)
+				if (Input.IsMouseButtonPressed(MouseButton.Left) && !IsTouching)
 				{
-					if (mb.Pressed)
-						EmitSignal(SignalName.MousePressed, (int)shapeIdx);
-					else
-						EmitSignal(SignalName.MouseReleased, (int)shapeIdx);
+					IsTouching = true;
+					EmitSignal(SignalName.TouchEntered);
+					GD.Print("Touching GlyphText");
+				}
+			};
+
+			Hitbox.MouseExited += () =>
+			{
+				if (IsTouching)
+				{
+					IsTouching = false;
+					EmitSignal(SignalName.TouchExited);
+					GD.Print("Not Touching GlyphText");
+				}
+			};
+
+			Hitbox.InputEvent += (n, e, idx) =>
+			{
+				if (e is InputEventMouseButton mb)
+				{
+					if (mb.Pressed && mb.ButtonIndex == MouseButton.Left && !IsTouching)
+					{
+						IsTouching = true;
+						EmitSignal(SignalName.TouchEntered);
+						GD.Print("Touching GlyphText");
+					}
+					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left && IsTouching)
+					{
+						IsTouching = false;
+						EmitSignal(SignalName.TouchExited);
+						GD.Print("Not Touching GlyphText");
+					}
 				}
 			};
 
 			Hitbox.MouseShapeEntered += shapeIdx =>
 			{
-				_hoveredGlyphs.Add((int)shapeIdx);
-
-				if (_hoveredGlyphs.Count == 1) // Only emit if this is the first hovered glyph (handles overlapping glyphs)
-					EmitSignal(SignalName.MouseEntered, (int)shapeIdx);
+				EmitSignal(SignalName.MouseEntered, (int)shapeIdx);
 			};
 
 			Hitbox.MouseShapeExited += shapeIdx =>
 			{
-				_hoveredGlyphs.Remove((int)shapeIdx);
-
-				if (_hoveredGlyphs.Count == 0) // Only emit if there are no more hovered glyphs (handles overlapping glyphs)
-					EmitSignal(SignalName.MouseExited, (int)shapeIdx);
+				EmitSignal(SignalName.MouseExited, (int)shapeIdx);
 			};
 
 			Hitbox.AreaEntered += area => EmitSignal(SignalName.AreaEntered, area);

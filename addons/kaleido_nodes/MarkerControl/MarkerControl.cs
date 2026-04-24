@@ -7,11 +7,6 @@ public partial class MarkerControl : Control
 {
 	const int GizmoSize = 16;
 
-	public MarkerControl()
-	{
-		this.Size = new Vector2(100, 100);
-	}
-
 	public override void _Ready()
 	{
 		base._Ready();

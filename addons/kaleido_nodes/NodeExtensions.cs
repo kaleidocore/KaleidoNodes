@@ -67,11 +67,7 @@ public static class NodeExtensions
 		var prop = (PropertyInfo)((MemberExpression)body).Member;
 		var name = $"tween_{prop.Name}";
 
-		if (node.HasMeta(name))
-		{
-			var oldTween = node.GetMeta(name).As<Tween>();
-			oldTween.Kill();
-		}
+		FindTween(node, property)?.Kill();
 
 		var tween = node.CreateTween();
 		var mt = tween.TweenMethod(Callable.From<Variant>(v => prop.SetValue(node, Convert.ChangeType(v.Obj, typeof(T)))), Variant.From(getter(node)), Variant.From(target), duration);
@@ -85,6 +81,29 @@ public static class NodeExtensions
 		tween.Finished += () => node.RemoveMeta(name);
 
 		return tween;
+	}
+
+	/// <summary>
+	/// Resets a tween on a property if it exists.
+	/// </summary>
+	/// <typeparam name="TNode"></typeparam>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="node"></param>
+	/// <param name="property"></param>
+	/// <returns></returns>
+	public static Tween? FindTween<TNode, T>(this TNode node, Expression<Func<TNode, T>> property) where TNode : Node
+	{
+		var body = property.Body is UnaryExpression unary ? unary.Operand : property.Body;
+		var prop = (PropertyInfo)((MemberExpression)body).Member;
+		var name = $"tween_{prop.Name}";
+
+		if (node.HasMeta(name))
+		{
+			var tween = node.GetMeta(name).As<Tween>();
+			return tween;
+		}
+
+		return null;
 	}
 
 	public static Tween Delay(this Node node, float delay, Action action)

@@ -5,8 +5,9 @@ namespace KaleidoNodes;
 public partial class GameCursor : Node2D
 {
 	bool _active;
+	double _mouseFilter;
 
-	public bool IsTouchMode { get; private set; } = DisplayServer.IsTouchscreenAvailable();
+	public static bool IsMouse { get; private set; }
 	public bool IsActive => _active && Enabled;
 
 	bool _enabled = true;
@@ -22,12 +23,7 @@ public partial class GameCursor : Node2D
 			_enabled = value;
 
 			if (_active)
-			{
-				if (_enabled)
-					SendActiveChanged(true);
-				else
-					SendActiveChanged(false);
-			}
+				HandleActiveChanged();
 		}
 	}
 
@@ -37,21 +33,21 @@ public partial class GameCursor : Node2D
 	[Export]
 	public bool Confined { get; set; } = false;
 
-	[Signal] public delegate void ActiveChangedEventHandler(bool active);
+	[Export]
+	public double TouchTimeout { get; set; } = 0.5;
+
+	[Signal]
+	public delegate void ActiveChangedEventHandler(bool active);
 
 	public override void _Ready()
 	{
 		if (Engine.IsEditorHint())
 			return;
 
-		if (IsTouchMode)
-			OnHide();
-		else
-			OnShow();
+		ZIndex = 999;
 
 		UpdateMouseMode();
-
-		ZIndex = 999;
+		OnActiveChange();
 	}
 
 	public override void _Input(InputEvent e)
@@ -59,73 +55,78 @@ public partial class GameCursor : Node2D
 		if (Engine.IsEditorHint())
 			return;
 
-		if (e is InputEventScreenTouch touch)
+		if (e is InputEventMouseButton mb)
 		{
-			if (!IsTouchMode)
-			{
-				IsTouchMode = true;
-				UpdateMouseMode();
-			}
+			if (_mouseFilter > 0)
+				return;
 
-			if (_active != touch.Pressed)
-			{
-				_active = touch.Pressed;
-
-				if (_enabled)
-				{
-					if (_active)
-						OnShow();
-					else
-						OnHide();
-
-					SendActiveChanged(_active);
-				}
-			}
-		}
-		else if (e is InputEventMouseMotion motion)
-		{
-			if (IsTouchMode)
-			{
-				IsTouchMode = false;
-				UpdateMouseMode();
-				OnShow();
-			}
-		}
-		else if (e is InputEventMouseButton mb)
-		{
-			if (IsTouchMode)
-			{
-				IsTouchMode = false;
-				UpdateMouseMode();
-				OnShow();
-			}
+			IsMouse = true;
 
 			if (_active != mb.Pressed)
 			{
 				_active = mb.Pressed;
 
 				if (_enabled)
-					SendActiveChanged(_active);
+					HandleActiveChanged();
 			}
+
+			//GD.Print("Button");
+		}
+		else if (e is InputEventMouseMotion)
+		{
+			if (_mouseFilter > 0)
+				return;
+
+			IsMouse = true;
+
+			if (_enabled)
+				OnMove();
+		}
+		else if (e is InputEventScreenTouch st)
+		{
+			_mouseFilter = TouchTimeout;
+			IsMouse = false;
+
+			if (_active != st.Pressed)
+			{
+				_active = st.Pressed;
+				if (_enabled)
+					HandleActiveChanged();
+			}
+			//GD.Print("Touch");
+		}
+		else if (e is InputEventScreenDrag)
+		{
+			_mouseFilter = TouchTimeout;
+			IsMouse = false;
+
+			if (_enabled)
+				OnMove();
 		}
 	}
 
-	void SendActiveChanged(bool active)
+	void HandleActiveChanged()
 	{
-		EmitSignal(SignalName.ActiveChanged, active);
+		if (Engine.IsEditorHint())
+			return;
+
+		OnActiveChange();
+		EmitSignal(SignalName.ActiveChanged, IsActive);
 	}
 
-	protected virtual void OnShow()
+	protected virtual void OnActiveChange()
 	{
+		// Mouse or touch is active
 	}
 
-	protected virtual void OnHide()
+	protected virtual void OnMove()
 	{
+		// Mouse or touch is moved
 	}
 
 	void UpdateMouseMode()
 	{
-		if (HideOSCursor || IsTouchMode)
+		if (HideOSCursor)
 			Input.MouseMode = Confined ? Input.MouseModeEnum.ConfinedHidden : Input.MouseModeEnum.Hidden;
 		else
 			Input.MouseMode = Confined ? Input.MouseModeEnum.Confined : Input.MouseModeEnum.Visible;
@@ -135,6 +136,9 @@ public partial class GameCursor : Node2D
 	{
 		if (Engine.IsEditorHint())
 			return;
+
+		if (_mouseFilter > 0)
+			_mouseFilter -= delta;
 
 		GlobalPosition = GetGlobalMousePosition();
 	}

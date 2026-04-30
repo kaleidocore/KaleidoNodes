@@ -178,7 +178,7 @@ public partial class GlyphText : Node2D
 				{
 					IsTouching = true;
 					EmitSignal(SignalName.TouchEntered);
-					GD.Print("Touching GlyphText");
+					//GD.Print("Touching GlyphText");
 				}
 			};
 
@@ -188,7 +188,7 @@ public partial class GlyphText : Node2D
 				{
 					IsTouching = false;
 					EmitSignal(SignalName.TouchExited);
-					GD.Print("Not Touching GlyphText");
+					//GD.Print("Not Touching GlyphText");
 				}
 			};
 
@@ -200,13 +200,13 @@ public partial class GlyphText : Node2D
 					{
 						IsTouching = true;
 						EmitSignal(SignalName.TouchEntered);
-						GD.Print("Touching GlyphText");
+						//GD.Print("Touching GlyphText");
 					}
 					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left && IsTouching)
 					{
 						IsTouching = false;
 						EmitSignal(SignalName.TouchExited);
-						GD.Print("Not Touching GlyphText");
+						//GD.Print("Not Touching GlyphText");
 					}
 				}
 			};

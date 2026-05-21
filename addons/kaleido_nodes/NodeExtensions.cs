@@ -106,7 +106,7 @@ public static class NodeExtensions
 		return null;
 	}
 
-	public static Tween Delay(this Node node, float delay, Action action)
+	public static Tween Delay(this Node node, double delay, Action action)
 	{
 		var tween = node.CreateTween();
 		tween.TweenInterval(delay);

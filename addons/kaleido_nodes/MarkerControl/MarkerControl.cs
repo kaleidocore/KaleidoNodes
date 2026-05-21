@@ -35,9 +35,11 @@ public partial class MarkerControl : Control
 		if (!Engine.IsEditorHint())
 			return;
 
+		/*
 		OffsetLeft = -GizmoSize;
 		OffsetRight = GizmoSize;
 		OffsetTop = -GizmoSize;
 		OffsetBottom = GizmoSize;
+		*/
 	}
 }

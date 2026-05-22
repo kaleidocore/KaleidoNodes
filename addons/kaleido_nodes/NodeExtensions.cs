@@ -60,12 +60,14 @@ public static class NodeExtensions
 		node.GlobalPosition = target.GlobalPivot();
 	}
 
+	const string TweenMetaPrefix = "tween_";
+
 	public static Tween TweenProperty<TNode, T>(this TNode node, Expression<Func<TNode, T>> property, T target, float duration, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.InOut, float delay = 0f) where TNode : Node
 	{
 		var getter = property.Compile();
 		var body = property.Body is UnaryExpression unary ? unary.Operand : property.Body;
 		var prop = (PropertyInfo)((MemberExpression)body).Member;
-		var name = $"tween_{prop.Name}";
+		var name = $"{TweenMetaPrefix}{prop.Name}";
 
 		FindTween(node, property)?.Kill();
 
@@ -95,7 +97,7 @@ public static class NodeExtensions
 	{
 		var body = property.Body is UnaryExpression unary ? unary.Operand : property.Body;
 		var prop = (PropertyInfo)((MemberExpression)body).Member;
-		var name = $"tween_{prop.Name}";
+		var name = $"{TweenMetaPrefix}{prop.Name}";
 
 		if (node.HasMeta(name))
 		{
@@ -106,11 +108,35 @@ public static class NodeExtensions
 		return null;
 	}
 
-	public static Tween Delay(this Node node, double delay, Action action)
+	const string DelayMetaPrefix = "delay_";
+
+	public static Tween? FindDelay(this Node node, string id)
 	{
+		var name = $"{DelayMetaPrefix}{id}";
+		if (node.HasMeta(name))
+		{
+			var tween = node.GetMeta(name).As<Tween>();
+			return tween;
+		}
+		return null;
+	}
+
+	public static Tween Delay(this Node node, double delay, Action action, string? id = null)
+	{
+		if (id != null)
+			FindDelay(node, id)?.Kill();
+
 		var tween = node.CreateTween();
 		tween.TweenInterval(delay);
 		tween.Finished += action;
+
+		if (id != null)
+		{
+			var name = $"{DelayMetaPrefix}{id}";
+			node.SetMeta(name, tween);
+			tween.Finished += () => node.RemoveMeta(name);
+		}
+
 		return tween;
 	}
 }

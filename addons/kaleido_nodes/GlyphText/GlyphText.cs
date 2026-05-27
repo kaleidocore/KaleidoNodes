@@ -43,7 +43,8 @@ public partial class GlyphText : Node2D
 	bool CanRebuild => IsNodeReady() && _hitbox != null;
 
 	public Rect2 Bounds => _bounds;
-	public bool IsTouching { get; private set; }
+	public bool IsGrabbed { get; private set; }
+	public bool IsHovered { get; private set; }
 
 	[Export]
 	public Font? Font
@@ -162,14 +163,10 @@ public partial class GlyphText : Node2D
 		}
 	}
 
-	[Signal] public delegate void TouchEnteredEventHandler();
-	[Signal] public delegate void TouchExitedEventHandler();
-	[Signal] public delegate void TouchDownEventHandler();
-	[Signal] public delegate void TouchUpEventHandler();
-	[Signal] public delegate void MouseEnteredEventHandler();
-	[Signal] public delegate void MouseExitedEventHandler();
-	[Signal] public delegate void MouseGlyphEnteredEventHandler(int glyphIndex);
-	[Signal] public delegate void MouseGlyphExitedEventHandler(int glyphIndex);
+	[Signal] public delegate void GrabbedEventHandler();
+	[Signal] public delegate void ReleasedEventHandler();
+	[Signal] public delegate void HoveredEventHandler();
+	[Signal] public delegate void UnhoveredEventHandler();
 	[Signal] public delegate void AreaEnteredEventHandler(Area2D area);
 	[Signal] public delegate void AreaExitedEventHandler(Area2D area);
 
@@ -204,21 +201,21 @@ public partial class GlyphText : Node2D
 		{
 			Hitbox.MouseEntered += () =>
 			{
-				if (Input.IsMouseButtonPressed(MouseButton.Left) && !IsTouching)
+				if (!IsHovered)
 				{
-					IsTouching = true;
-					EmitSignal(SignalName.TouchEntered);
-					//GD.Print("Touching GlyphText");
+					IsHovered = true;
+					EmitSignal(SignalName.Hovered);
+					//GD.Print($"Mouse entered {Text}");
 				}
 			};
 
 			Hitbox.MouseExited += () =>
 			{
-				if (IsTouching)
+				if (IsHovered)
 				{
-					IsTouching = false;
-					EmitSignal(SignalName.TouchExited);
-					//GD.Print("Not Touching GlyphText");
+					IsHovered = false;
+					EmitSignal(SignalName.Unhovered);
+					//GD.Print($"Mouse exited {Text}");
 				}
 			};
 
@@ -226,29 +223,22 @@ public partial class GlyphText : Node2D
 			{
 				if (e is InputEventMouseButton mb)
 				{
-					if (mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+					if (mb.Pressed && mb.ButtonIndex == MouseButton.Left && !IsGrabbed)
 					{
-						if (!IsTouching)
-						{
-							IsTouching = true;
-							EmitSignal(SignalName.TouchEntered);
-							EmitSignal(SignalName.TouchDown);
-							GD.Print($"Touch down on {Text}");
-						}
+						IsGrabbed = true;
+						EmitSignal(SignalName.Grabbed);
+						//GD.Print("Grabbed GlyphText");
 					}
-					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left && IsGrabbed)
 					{
-						if (IsTouching)
-						{
-							IsTouching = false;
-							EmitSignal(SignalName.TouchUp);
-							EmitSignal(SignalName.TouchExited);
-							GD.Print($"Touch up on {Text}");
-						}
+						IsGrabbed = false;
+						EmitSignal(SignalName.Released);
+						//GD.Print("Not Grabbed GlyphText");
 					}
 				}
 			};
 
+			/*
 			Hitbox.MouseShapeEntered += shapeIdx =>
 			{
 				EmitSignal(SignalName.MouseEntered, (int)shapeIdx);
@@ -258,12 +248,28 @@ public partial class GlyphText : Node2D
 			{
 				EmitSignal(SignalName.MouseExited, (int)shapeIdx);
 			};
+			*/
 
 			Hitbox.AreaEntered += area => EmitSignal(SignalName.AreaEntered, area);
 			Hitbox.AreaExited += area => EmitSignal(SignalName.AreaExited, area);
 		}
 
 		Rebuild();
+	}
+
+	public override void _UnhandledInput(InputEvent e)
+	{
+		base._UnhandledInput(e);
+
+		if (e is InputEventMouseButton mb)
+		{
+			if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left && IsGrabbed)
+			{
+				IsGrabbed = false;
+				EmitSignal(SignalName.Released);
+				//GD.Print("Not Grabbed GlyphText");
+			}
+		}
 	}
 
 	public override void _Draw()

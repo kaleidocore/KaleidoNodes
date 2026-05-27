@@ -40,7 +40,7 @@ public partial class GlyphText : Node2D
 	Area2D? _hitbox;
 	Area2D Hitbox => _hitbox ?? throw new InvalidOperationException("Hitbox node not found");
 
-	bool CanRebuild => IsInsideTree() && _hitbox != null;
+	bool CanRebuild => IsNodeReady() && _hitbox != null;
 
 	public Rect2 Bounds => _bounds;
 	public bool IsTouching { get; private set; }
@@ -134,8 +134,38 @@ public partial class GlyphText : Node2D
 		}
 	}
 
+	uint _collisionLayer = 1;
+	[Export(hint: PropertyHint.Layers2DPhysics)]
+	public uint CollisionLayer
+	{
+		get => _collisionLayer;
+		set
+		{
+			_collisionLayer = value;
+
+			if (_hitbox != null)
+				_hitbox.CollisionLayer = value;
+		}
+	}
+
+	uint _collisionMask = 1;
+	[Export(hint: PropertyHint.Layers2DPhysics)]
+	public uint CollisionMask
+	{
+		get => _collisionMask;
+		set
+		{
+			_collisionMask = value;
+
+			if (_hitbox != null)
+				_hitbox.CollisionMask = value;
+		}
+	}
+
 	[Signal] public delegate void TouchEnteredEventHandler();
 	[Signal] public delegate void TouchExitedEventHandler();
+	[Signal] public delegate void TouchDownEventHandler();
+	[Signal] public delegate void TouchUpEventHandler();
 	[Signal] public delegate void MouseEnteredEventHandler();
 	[Signal] public delegate void MouseExitedEventHandler();
 	[Signal] public delegate void MouseGlyphEnteredEventHandler(int glyphIndex);
@@ -158,8 +188,8 @@ public partial class GlyphText : Node2D
 			InputPickable = true,
 			Monitoring = true,
 			Monitorable = true,
-			CollisionLayer = 1,
-			CollisionMask = 1,
+			CollisionLayer = _collisionLayer,
+			CollisionMask = _collisionMask,
 		};
 
 		AddChild(_hitbox);
@@ -196,17 +226,25 @@ public partial class GlyphText : Node2D
 			{
 				if (e is InputEventMouseButton mb)
 				{
-					if (mb.Pressed && mb.ButtonIndex == MouseButton.Left && !IsTouching)
+					if (mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 					{
-						IsTouching = true;
-						EmitSignal(SignalName.TouchEntered);
-						//GD.Print("Touching GlyphText");
+						if (!IsTouching)
+						{
+							IsTouching = true;
+							EmitSignal(SignalName.TouchEntered);
+							EmitSignal(SignalName.TouchDown);
+							GD.Print($"Touch down on {Text}");
+						}
 					}
-					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left && IsTouching)
+					else if (!mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 					{
-						IsTouching = false;
-						EmitSignal(SignalName.TouchExited);
-						//GD.Print("Not Touching GlyphText");
+						if (IsTouching)
+						{
+							IsTouching = false;
+							EmitSignal(SignalName.TouchUp);
+							EmitSignal(SignalName.TouchExited);
+							GD.Print($"Touch up on {Text}");
+						}
 					}
 				}
 			};
@@ -252,6 +290,8 @@ public partial class GlyphText : Node2D
 
 	void Rebuild()
 	{
+		GD.Print($"Rebuilding GlyphText hitboxes for '{_text}'...");
+
 		foreach (var child in Hitbox.GetChildren())
 			child.QueueFree();
 

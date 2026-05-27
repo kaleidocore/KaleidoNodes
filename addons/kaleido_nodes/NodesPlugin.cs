@@ -21,6 +21,10 @@ public partial class NodesPlugin : EditorPlugin
 		var gameCursorScript = GD.Load<Script>(PluginDir.PathJoin("GameCursor/GameCursor.cs"));
 		var gameCursorIcon = GD.Load<Texture2D>(PluginDir.PathJoin("GameCursor/icon.svg"));
 		AddCustomType(nameof(GameCursor), nameof(Node2D), gameCursorScript, gameCursorIcon);
+
+		var audioStreamPlayer1DScript = GD.Load<Script>(PluginDir.PathJoin("AudioStreamPlayer1D/AudioStreamPlayer1D.cs"));
+		var audioStreamPlayer1DIcon = GD.Load<Texture2D>(PluginDir.PathJoin("AudioStreamPlayer1D/icon.svg"));
+		AddCustomType(nameof(AudioStreamPlayer1D), nameof(Node2D), audioStreamPlayer1DScript, audioStreamPlayer1DIcon);
 	}
 
 	public override void _ExitTree()
@@ -28,6 +32,7 @@ public partial class NodesPlugin : EditorPlugin
 		RemoveCustomType(nameof(MarkerControl));
 		RemoveCustomType(nameof(GlyphText));
 		RemoveCustomType(nameof(GameCursor));
+		RemoveCustomType(nameof(AudioStreamPlayer1D));
 	}
 }
 #endif

@@ -47,7 +47,7 @@ public partial class GameCursor : Node2D
 		ZIndex = 999;
 
 		UpdateMouseMode();
-		OnActiveChange();
+		UpdateState();
 	}
 
 	public override void _Input(InputEvent e)
@@ -90,6 +90,7 @@ public partial class GameCursor : Node2D
 			if (_active != st.Pressed)
 			{
 				_active = st.Pressed;
+
 				if (_enabled)
 					HandleActiveChanged();
 			}
@@ -116,7 +117,13 @@ public partial class GameCursor : Node2D
 
 	protected virtual void OnActiveChange()
 	{
+		UpdateState();
 		// Mouse or touch is active
+	}
+
+	protected virtual void UpdateState()
+	{
+		// Mouse or touch state is updated
 	}
 
 	protected virtual void OnMove()

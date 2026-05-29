@@ -83,6 +83,30 @@ public partial class GlyphText : Node2D
 		}
 	}
 
+	Color _outlineColor = Colors.Black;
+	[Export]
+	public Color OutlineColor
+	{
+		get => _outlineColor;
+		set
+		{
+			_outlineColor = value;
+			QueueRedraw();
+		}
+	}
+
+	int _outlineWidth = 1;
+	[Export]
+	public int OutlineWidth
+	{
+		get => _outlineWidth;
+		set
+		{
+			_outlineWidth = value;
+			QueueRedraw();
+		}
+	}
+
 	[Export]
 	public float Padding
 	{
@@ -292,6 +316,9 @@ public partial class GlyphText : Node2D
 		}
 
 		_textLine?.Draw(GetCanvasItem(), _offset, Color);
+
+		if (OutlineWidth > 0)
+			_textLine?.DrawOutline(GetCanvasItem(), _offset, OutlineWidth, OutlineColor);
 	}
 
 	void Rebuild()

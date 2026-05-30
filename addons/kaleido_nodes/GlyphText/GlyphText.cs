@@ -28,7 +28,8 @@ public partial class GlyphText : Node2D
 	int _fontSize = 100;
 	float _padding = 0f;
 	TextLine? _textLine;
-	Rect2 _bounds;
+	Rect2 _fullBounds;
+	Rect2 _glyphBounds;
 	Color _color = Colors.White;
 	HorizontalOrigin _originX = HorizontalOrigin.Center;
 	VerticalOrigin _originY = VerticalOrigin.Baseline;
@@ -42,7 +43,8 @@ public partial class GlyphText : Node2D
 
 	bool CanRebuild => IsNodeReady() && _hitbox != null;
 
-	public Rect2 Bounds => _bounds;
+	public Rect2 FullBounds => _fullBounds;
+	public Rect2 GlyphBounds => _glyphBounds;
 	public bool IsGrabbed { get; private set; }
 	public bool IsHovered { get; private set; }
 
@@ -300,7 +302,7 @@ public partial class GlyphText : Node2D
 	{
 		if (Engine.IsEditorHint())
 		{
-			DrawRect(_bounds, new Color(0f, 0f, 1f, 0.1f), filled: true);
+			DrawRect(_fullBounds, new Color(0f, 0f, 1f, 0.1f), filled: true);
 
 			foreach (var col in Hitbox.GetChildren().OfType<CollisionShape2D>())
 			{
@@ -317,8 +319,10 @@ public partial class GlyphText : Node2D
 
 		_textLine?.Draw(GetCanvasItem(), _offset, Color);
 
-		if (OutlineWidth > 0)
-			_textLine?.DrawOutline(GetCanvasItem(), _offset, OutlineWidth, OutlineColor);
+		var scaledOutline = (int)(OutlineWidth * GlobalScale.X);
+
+		if (scaledOutline > 1)
+			_textLine?.DrawOutline(GetCanvasItem(), _offset, scaledOutline, OutlineColor);
 	}
 
 	void Rebuild()
@@ -342,6 +346,8 @@ public partial class GlyphText : Node2D
 		var ascent = (float)ts.ShapedTextGetAscent(shaped);
 		float cursorX = 0f;
 
+		Rect2? glyphBounds = null;
+
 		foreach (var glyph in ts.ShapedTextGetGlyphs(shaped))
 		{
 			// Not all keys are guaranteed present — read everything defensively
@@ -363,17 +369,25 @@ public partial class GlyphText : Node2D
 				float left = cursorX + offset.X + glyphBearing.X - _padding;
 				float top = ascent + offset.Y + glyphBearing.Y - _padding;
 				var size = glyphSize + (Vector2.One * _padding * 2f);
+				var position = new Vector2(left + (size.X * 0.5f), top + (size.Y * 0.5f));
+
+				if (glyphBounds == null)
+					glyphBounds = new Rect2(position - (size * 0.5f), size);
+				else
+					glyphBounds = glyphBounds.Value.Merge(new Rect2(position - (size * 0.5f), size));
 
 				Hitbox.AddChild(new CollisionShape2D
 				{
 					Shape = new RectangleShape2D { Size = size },
-					Position = new Vector2(left + (size.X * 0.5f), top + (size.Y * 0.5f)),
+					Position = position,
 					Visible = false,
 				});
 			}
 
 			cursorX += advance;
 		}
+
+		glyphBounds ??= new Rect2(Vector2.Zero, Vector2.Zero);
 
 		float totalWidth = cursorX;
 		float fullHeight = (float)ts.ShapedTextGetAscent(shaped) + (float)ts.ShapedTextGetDescent(shaped);
@@ -399,11 +413,15 @@ public partial class GlyphText : Node2D
 		_offset = new Vector2(offsetX, offsetY);
 
 		// origin is baseline (y=0), ascent goes up (negative y), descent goes down
-		_bounds = new Rect2(_offset, fullSize);
+		_fullBounds = new Rect2(_offset, fullSize);
+		_glyphBounds = new Rect2((_offset + glyphBounds.Value.Position), glyphBounds.Value.Size);
 
 		Hitbox.Position = new Vector2(offsetX, offsetY);
 
 		ts.FreeRid(shaped);
 		QueueRedraw();
 	}
+
+	public Rect2 GetGlobalFullRect() => GlobalTransform * _fullBounds;
+	public Rect2 GetGlobalGlyphRect() => GlobalTransform * _glyphBounds;
 }

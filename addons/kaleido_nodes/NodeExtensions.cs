@@ -17,11 +17,11 @@ public static class NodeExtensions
 		=> control.TweenTo(target.GlobalPosition, duration, transition, ease, delay);
 
 	public static Tween TweenTo(this Control control, Control target, float duration = 1f, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.InOut, float delay = 0f)
-		=> control.TweenTo(target.GlobalPivot(), duration, transition, ease, delay);
+		=> control.TweenTo(target.GlobalCenter(), duration, transition, ease, delay);
 
 	public static Tween TweenTo(this Control control, Vector2 target, float duration = 1f, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.InOut, float delay = 0f)
 	{
-		var offset = control.GlobalPosition - control.GlobalPivot();
+		var offset = control.GlobalPosition - control.GlobalCenter();
 		var tween = control.TweenProperty(c => c.GlobalPosition, target + offset, duration, transition, ease, delay);
 		return tween;
 	}
@@ -30,7 +30,7 @@ public static class NodeExtensions
 		=> node.TweenTo(target.GlobalPosition, duration, transition, ease, delay);
 
 	public static Tween TweenTo(this Node2D node, Control target, float duration = 1f, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.InOut, float delay = 0f)
-		=> node.TweenTo(target.GlobalPivot(), duration, transition, ease, delay);
+		=> node.TweenTo(target.GlobalCenter(), duration, transition, ease, delay);
 
 	public static Tween TweenTo(this Node2D node, Vector2 target, float duration = 1f, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.InOut, float delay = 0f)
 	{
@@ -40,14 +40,14 @@ public static class NodeExtensions
 
 	public static void MoveTo(this Control control, Node2D target)
 	{
-		var offset = control.GlobalPosition - control.GlobalPivot();
+		var offset = control.GlobalPosition - control.GlobalCenter();
 		control.GlobalPosition = target.GlobalPosition + offset;
 	}
 
 	public static void MoveTo(this Control control, Control target)
 	{
-		var offset = control.GlobalPosition - control.GlobalPivot();
-		control.GlobalPosition = target.GlobalPivot() + offset;
+		var offset = control.GlobalPosition - control.GlobalCenter();
+		control.GlobalPosition = target.GlobalCenter() + offset;
 	}
 
 	public static void MoveTo(this Node2D node, Node2D target)
@@ -57,7 +57,7 @@ public static class NodeExtensions
 
 	public static void MoveTo(this Node2D node, Control target)
 	{
-		node.GlobalPosition = target.GlobalPivot();
+		node.GlobalPosition = target.GlobalCenter();
 	}
 
 	const string TweenMetaPrefix = "tween_";
@@ -137,6 +137,23 @@ public static class NodeExtensions
 			tween.Finished += () => node.RemoveMeta(name);
 		}
 
+		return tween;
+	}
+
+	public static Tween ColorFade(this CanvasItem node, Color to, float duration, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.Out, float delay = 0f)
+		=> node.TweenProperty(t => t.Modulate, to, duration, transition, ease, delay);
+
+	public static Tween FadeIn(this CanvasItem node, float duration, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.Out, float delay = 0f)
+	{
+		node.Modulate = new Color(node.Modulate.R, node.Modulate.G, node.Modulate.B, 0f);
+		node.Visible = true;
+		return ColorFade(node, new Color(node.Modulate.R, node.Modulate.G, node.Modulate.B, 1f), duration, transition, ease, delay);
+	}
+
+	public static Tween FadeOut(this CanvasItem node, float duration, Tween.TransitionType transition = Tween.TransitionType.Cubic, Tween.EaseType ease = Tween.EaseType.Out, float delay = 0f)
+	{
+		var tween = ColorFade(node, new Color(node.Modulate.R, node.Modulate.G, node.Modulate.B, 0f), duration, transition, ease, delay);
+		tween.Finished += () => node.Visible = false;
 		return tween;
 	}
 }

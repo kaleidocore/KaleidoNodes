@@ -189,6 +189,37 @@ public partial class GlyphText : Node2D
 		}
 	}
 
+	bool _mouseEnabled = true;
+	[Export]
+	public bool MouseEnabled
+	{
+		get => _mouseEnabled;
+		set
+		{
+			_mouseEnabled = value;
+
+			if (_hitbox != null)
+				_hitbox.InputPickable = value;
+		}
+	}
+
+	bool _hitboxEnabled = true;
+	[Export]
+	public bool MonitorEnabled
+	{
+		get => _hitboxEnabled;
+		set
+		{
+			_hitboxEnabled = value;
+
+			if (_hitbox != null)
+			{
+				_hitbox.Monitoring = value;
+				_hitbox.Monitorable = value;
+			}
+		}
+	}
+
 	[Signal] public delegate void GrabbedEventHandler();
 	[Signal] public delegate void ReleasedEventHandler();
 	[Signal] public delegate void HoveredEventHandler();
@@ -208,9 +239,9 @@ public partial class GlyphText : Node2D
 			Name = "Hitbox",
 			ZIndex = 1,
 			ShowBehindParent = true,
-			InputPickable = true,
-			Monitoring = true,
-			Monitorable = true,
+			InputPickable = MouseEnabled,
+			Monitoring = MonitorEnabled,
+			Monitorable = MonitorEnabled,
 			CollisionLayer = _collisionLayer,
 			CollisionMask = _collisionMask,
 		};
@@ -223,6 +254,13 @@ public partial class GlyphText : Node2D
 
 	public override void _Ready()
 	{
+		if (_hitbox != null)
+		{
+			_hitbox.InputPickable = MouseEnabled;
+			_hitbox.Monitoring = MonitorEnabled;
+			_hitbox.Monitorable = MonitorEnabled;
+		}
+
 		if (!Engine.IsEditorHint())
 		{
 			Hitbox.MouseEntered += () =>
@@ -327,7 +365,7 @@ public partial class GlyphText : Node2D
 
 	void Rebuild()
 	{
-		GD.Print($"Rebuilding GlyphText hitboxes for '{_text}'...");
+		//GD.Print($"Rebuilding GlyphText hitboxes for '{_text}'...");
 
 		foreach (var child in Hitbox.GetChildren())
 			child.QueueFree();

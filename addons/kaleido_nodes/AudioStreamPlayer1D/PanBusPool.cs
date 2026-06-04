@@ -67,4 +67,24 @@ public partial class PanBusPool : Node
 
 		return AudioServer.GetBusSend(idx);
 	}
+
+	public static float GetVolume(StringName busName)
+	{
+		int idx = AudioServer.GetBusIndex(busName);
+
+		if (idx < 0)
+			return 1f;
+
+		return AudioServer.GetBusVolumeLinear(idx);
+	}
+
+	public static void SetVolume(StringName busName, float volume)
+	{
+		int idx = AudioServer.GetBusIndex(busName);
+
+		if (idx < 0)
+			return;
+
+		AudioServer.SetBusVolumeLinear(idx, volume);
+	}
 }

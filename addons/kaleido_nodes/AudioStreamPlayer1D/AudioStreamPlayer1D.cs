@@ -63,6 +63,8 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 	[Export(hint: PropertyHint.Range, hintString: "0,1,0.01")]
 	public float PanningScale { get; set; } = .5f;
 
+	[Export]
+	public float VolumeScale { get; set; } = 1f;
 
 	[Export]
 	public PanningRotation PanningRotation { get; set; } = PanningRotation.None;
@@ -92,6 +94,7 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 	public override void _Process(double delta)
 	{
 		PanBusPool.SetPan(_busName, GetPan());
+		PanBusPool.SetVolume(_busName, VolumeScale);
 	}
 
 	public override void _ExitTree()

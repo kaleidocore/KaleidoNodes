@@ -4,34 +4,111 @@ using Godot;
 
 namespace KaleidoNodes;
 
+[Tool]
 public partial class PanBusPool : Node
 {
+	const int PoolSize = 16;
 	const string BusPrefix = "_PanBus_";
-	static readonly Queue<string> _available = new();
+	static readonly Queue<StringName> _pool = [];
+	static int _busCounter = 0;
 
-	static void AddBus()
+	public static StringName Master => AudioServer.GetBusName(0);
+
+	public override void _EnterTree()
 	{
-		string name = $"{BusPrefix}{AudioServer.BusCount}";
-		AudioServer.AddBus();
-		int idx = AudioServer.BusCount - 1;
+		base._EnterTree();
+
+		// Nuke any stale pan buses that got baked into the .tres
+		Cleanup();
+
+		if (Engine.IsEditorHint())
+			return;
+
+		Allocate();
+	}
+
+	public override void _ExitTree()
+	{
+		Cleanup();
+		base._ExitTree();
+	}
+
+	static void Allocate()
+	{
+		while (_pool.Count < PoolSize)
+		{
+			var bus = AddBus();
+			_pool.Enqueue(bus);
+		}
+
+		GD.Print($"PanBusPool allocated {_pool.Count} buses.");
+	}
+
+	static void Cleanup()
+	{
+		var idx = 0;
+		while (idx < AudioServer.BusCount)
+		{
+			string name = AudioServer.GetBusName(idx);
+
+			if (IsPanBus(name))
+				AudioServer.RemoveBus(idx);
+			else
+				idx++;
+		}
+
+		_pool.Clear();
+		_busCounter = 0;
+	}
+
+	static StringName MakeName() => $"{BusPrefix}{_busCounter++}";
+
+	static StringName AddBus()
+	{
+		int idx = AudioServer.BusCount;
+		AudioServer.AddBus(idx);
+
+		StringName name = MakeName();
 		AudioServer.SetBusName(idx, name);
 		AudioServer.SetBusSend(idx, "Master");
 		AudioServer.AddBusEffect(idx, new AudioEffectPanner());
-		_available.Enqueue(name);
+
+		if (AudioServer.GetBusIndex(name) != idx)
+			throw new System.Exception("Bus registration failed FUCKING PIECE OF SHIT GODOT GARBAGE");
+
+		if (AudioServer.GetBusName(idx) != name)
+			throw new System.Exception("Bus name mismatch FUCKING PIECE OF SHIT GODOT GARBAGE");
+
+		GD.Print($"Added pan bus: {name} with index {idx}");
+		return name;
+	}
+
+	static void RemoveBus(string name)
+	{
+		int idx = AudioServer.GetBusIndex(name);
+
+		if (idx >= 0)
+			AudioServer.RemoveBus(idx);
 	}
 
 	public static StringName Acquire()
 	{
-		if (_available.Count == 0)
-			AddBus();
+		if (_pool.Count > 0)
+			return _pool.Dequeue();
 
-		return _available.Count > 0 ? _available.Dequeue() : "Master";
+		var bus = AddBus();
+		return bus;
 	}
 
 	public static void Release(StringName busName)
 	{
-		if (busName != "Master")
-			_available.Enqueue(busName);
+		if (!IsPanBus(busName))
+			return;
+
+		if (Engine.IsEditorHint())
+			RemoveBus(busName);
+		else
+			_pool.Enqueue(busName);
 	}
 
 	public static bool IsPanBus(StringName busName)
@@ -55,6 +132,9 @@ public partial class PanBusPool : Node
 		if (idx < 0)
 			return;
 
+		if (sendName.IsEmpty)
+			sendName = Master;
+
 		AudioServer.SetBusSend(idx, sendName);
 	}
 
@@ -63,7 +143,7 @@ public partial class PanBusPool : Node
 		int idx = AudioServer.GetBusIndex(busName);
 
 		if (idx < 0)
-			return "Master";
+			return Master;
 
 		return AudioServer.GetBusSend(idx);
 	}

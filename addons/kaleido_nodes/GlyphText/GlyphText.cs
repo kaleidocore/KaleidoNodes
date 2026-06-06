@@ -23,6 +23,8 @@ public enum VerticalOrigin
 [Tool]
 public partial class GlyphText : Node2D
 {
+	const float OutlineRatio = 0.25f;
+
 	string _text = "A";
 	Font? _font;
 	int _fontSize = 100;
@@ -98,14 +100,14 @@ public partial class GlyphText : Node2D
 		}
 	}
 
-	int _outlineWidth = 1;
-	[Export]
-	public int OutlineWidth
+	float _outlineScale = 0f;
+	[Export(hint: PropertyHint.Range, hintString: "0,1,0.01")]
+	public float OutlineScale
 	{
-		get => _outlineWidth;
+		get => _outlineScale;
 		set
 		{
-			_outlineWidth = value;
+			_outlineScale = value;
 			QueueRedraw();
 		}
 	}
@@ -372,14 +374,16 @@ public partial class GlyphText : Node2D
 		}
 
 		var ci = GetCanvasItem();
+
+		if (OutlineScale > 0)
+		{
+			var scaledOutline = Mathf.Max(1, OutlineScale * OutlineRatio * FontSize);
+
+			if (OutlineScale > 0)
+				_textLine?.DrawOutline(ci, _offset, Mathf.RoundToInt(scaledOutline), OutlineColor);
+		}
+
 		_textLine?.Draw(ci, _offset, Color);
-
-		var scaledOutline = Mathf.RoundToInt(OutlineWidth * GlobalScale.X);
-
-		if (scaledOutline > 0)
-			_textLine?.DrawOutline(ci, _offset, scaledOutline, OutlineColor);
-		else
-			GD.Print("Outline width is zero or negative after scaling, skipping outline draw.");
 	}
 
 	void Rebuild()

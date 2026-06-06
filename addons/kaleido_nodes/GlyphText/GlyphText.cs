@@ -34,6 +34,7 @@ public partial class GlyphText : Node2D
 	HorizontalOrigin _originX = HorizontalOrigin.Center;
 	VerticalOrigin _originY = VerticalOrigin.Baseline;
 	Vector2 _offset;
+	Vector2 _lastScale = Vector2.Zero;
 
 	ColorRect? _boundsGizmo;
 	ColorRect BoundsGizmo => _boundsGizmo ?? throw new InvalidOperationException("BoundsGizmo node not found");
@@ -318,7 +319,22 @@ public partial class GlyphText : Node2D
 			Hitbox.AreaExited += area => EmitSignal(SignalName.AreaExited, area);
 		}
 
+		SetNotifyTransform(true);
 		Rebuild();
+	}
+
+	public override void _Notification(int what)
+	{
+		base._Notification(what);
+		if (what == NotificationTransformChanged)
+		{
+			var scale = GlobalScale;
+			if (!scale.IsEqualApprox(_lastScale))
+			{
+				_lastScale = scale;
+				QueueRedraw();
+			}
+		}
 	}
 
 	public override void _UnhandledInput(InputEvent e)
@@ -355,12 +371,15 @@ public partial class GlyphText : Node2D
 			}
 		}
 
-		_textLine?.Draw(GetCanvasItem(), _offset, Color);
+		var ci = GetCanvasItem();
+		_textLine?.Draw(ci, _offset, Color);
 
-		var scaledOutline = (int)(OutlineWidth * GlobalScale.X);
+		var scaledOutline = Mathf.RoundToInt(OutlineWidth * GlobalScale.X);
 
-		if (scaledOutline > 1)
-			_textLine?.DrawOutline(GetCanvasItem(), _offset, scaledOutline, OutlineColor);
+		if (scaledOutline > 0)
+			_textLine?.DrawOutline(ci, _offset, scaledOutline, OutlineColor);
+		else
+			GD.Print("Outline width is zero or negative after scaling, skipping outline draw.");
 	}
 
 	void Rebuild()

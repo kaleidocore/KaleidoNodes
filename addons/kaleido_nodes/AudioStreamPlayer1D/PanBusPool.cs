@@ -79,7 +79,9 @@ public partial class PanBusPool : Node
 		if (AudioServer.GetBusName(idx) != name)
 			throw new System.Exception("Bus name mismatch FUCKING PIECE OF SHIT GODOT GARBAGE");
 
-		GD.Print($"Added pan bus: {name} with index {idx}");
+		if (Engine.IsEditorHint())
+			GD.Print($"Added pan bus: {name} with index {idx}");
+
 		return name;
 	}
 

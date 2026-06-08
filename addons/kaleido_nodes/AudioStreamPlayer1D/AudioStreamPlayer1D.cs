@@ -36,17 +36,7 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 	}
 
 	[Export]
-	public bool Allocated
-	{
-		get => !_busName.IsEmpty;
-		set
-		{
-			if (value)
-				EnsureBus();
-			else
-				ReleaseBus();
-		}
-	}
+	public bool Allocate { get; set; }
 
 	public override void _ValidateProperty(Godot.Collections.Dictionary property)
 	{
@@ -76,11 +66,9 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 		];
 	}
 
-
 	public override void _Ready()
 	{
-		if (!Engine.IsEditorHint())
-			Allocated = true;
+		Finished += ReleaseBus;
 	}
 
 	public override void _ExitTree()
@@ -92,7 +80,11 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 	{
 		if (_busName.IsEmpty)
 		{
+			if (Engine.IsEditorHint())
+				GD.Print("Allocating bus for ", Name);
+
 			_busName = PanBusPool.Acquire();
+			Bus = _busName;
 			UpdateValues();
 		}
 	}
@@ -114,14 +106,10 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 
 	void UpdateValues()
 	{
-		if (_busName.IsEmpty)
-		{
-			Bus = SendBus;
-			return;
-		}
-
-		if (Bus != _busName)
-			Bus = _busName;
+		if (Playing || Allocate)
+			EnsureBus();
+		else if (!Allocate)
+			ReleaseBus();
 
 		PanBusPool.SetSend(_busName, SendBus);
 		PanBusPool.SetPan(_busName, GetPan());
@@ -144,8 +132,8 @@ public partial class AudioStreamPlayer1D : AudioStreamPlayer
 				ProjectSettings.GetSetting("display/window/size/viewport_height").AsInt32())
 			: vp.GetVisibleRect().Size;
 
-		var worldHalfWidth = (vpSize.X / 2f) / zoom.X;
-		var worldHalfHeight = (vpSize.Y / 2f) / zoom.Y;
+		var worldHalfWidth = vpSize.X / 2f / zoom.X;
+		var worldHalfHeight = vpSize.Y / 2f / zoom.Y;
 
 		// Origin: listener -> camera -> viewport center
 		var cameraCenter = camera?.GlobalPosition ?? (vpSize / 2f);
